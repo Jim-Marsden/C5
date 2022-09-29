@@ -19,9 +19,17 @@ FetchContent_Declare(fmt
         )
 FetchContent_MakeAvailable(fmt)
 
-add_executable(C5 main.cpp hw_insert.cpp hw_insert.h benchmarking.cpp benchmarking.h)
+
+#
+#FetchContent_Declare(plot
+#        GIT_REPOSITORY https://github.com/fbbdev/plot.git
+#        GIT_TAG master
+#        )
+#FetchContent_MakeAvailable(plot)
+
+add_executable(C5 main.cpp hw_insert.cpp hw_insert.h benchmarking.cpp benchmarking.h tests/hw1_tests.cpp)
 target_link_libraries(C5 PRIVATE Catch2::Catch2 fmt::fmt)
 
 include(CTest)
 include(Catch)
-catch_discover_tests(C5)
+#catch_discover_tests(C5)

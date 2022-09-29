@@ -1,12 +1,15 @@
-//
-// Created by snizzfox on 9/21/22.
-//
-
-#include <catch2/catch_test_macros.hpp>
 #include <cstdlib>
-#include <climits>
-#include "hw_insert.h"
-#include "catch2/generators/catch_generators.hpp"
+
+namespace helper {
+    template<class T>
+    static T *insert(T const &value);
+
+    template<class T, class Size_T>
+    static T *insert(T const &value, T const *array, Size_T length);
+
+    template<class T, class Size_T>
+    static T *insert(T const &value, T const *array, Size_T length, Size_T index);
+}
 
 /**
  * @name: int *insert(int *array, int length, int index, int value);
@@ -17,161 +20,65 @@
  * @return A new array of ints containing the contents of the original array plus the new value
 inserted at the given index. NULL will be returned should something goes wrong.
  */
-int* insert(int* array, int length, int index, int value)
-{
-	static constexpr auto int_bit_size{CHAR_BIT*sizeof(array[0])};
+int *insert_f(int const *array, size_t length, size_t index, int value) {
+    int *result;
+    if (length == 0U) { result = helper::insert(value); }
+    else if (index == 0U) { result = helper::insert(value, array, length); }
+    else { result = helper::insert(value, array, length, index); }
 
-	// Check if length is 0.
-	if (length==0) {
-		// The array we will be manipulating
-		auto new_array = static_cast<int*>(malloc(length*int_bit_size));
+    delete[]array;
 
-		// check if the new array is not valid memory.
-		if (new_array==nullptr) {
-			// return nullptr
-			return nullptr;
-		}
-
-		// assign value to the first element
-		new_array[0] = value;
-
-		// return the new array
-		return new_array;
-	}
-
-	// check if array is nullptr
-	if (array==nullptr) {
-		return nullptr;
-	}
-	// return nullptr
-
-	// create a pointer for an int array
-	int* new_array{nullptr};
-
-	// reallocate the array and assign into the new array pointer
-	new_array = static_cast<int*>(realloc(array, length*int_bit_size));
-
-	// check to see if index is the same size as length
-	if (index==length) {
-		// add value to the end of the new array
-		new_array[index] = value;
-		// return the new array
-		return new_array;
-	}
-
-	auto tail = array[length];
-	// loop from index + 2 to end (2 because 1 for the actual index, and 1 so we can backtrack)
-	for (int i = length+1; i>index; --i) {
-		new_array[i] = new_array[i-1];
-	}
-
-	new_array[index] = value;
-	return new_array;
+    return result;
 }
 
-#pragma clang diagnostic push
-#pragma ide diagnostic ignored "clion-misra-cpp2008-7-3-4"
-
-TEST_CASE("insert - one element")
-{
-	auto value = GENERATE(1, 2, 5, 6, 62, 1234, 64, 99);
-	auto array = insert(nullptr, 0, 0, value);
-	REQUIRE(array!=nullptr);
-	REQUIRE(value==array[0]);
-	free(array);
+/**
+ * @brief To create an add an element to an array
+ * @tparam T the type of the array
+ * @param value the element to add to the returning array.
+ * @return a dynamic array that has a single element of value
+ */
+template<class T>
+static T *helper::insert(const T &value) {
+    auto new_array = new int[1U]; // NOLINT(clion-misra-cpp2008-18-4-1)
+    new_array[0] = value;
+    return new_array;
 }
 
-TEST_CASE("insert - add back")
-{
-	auto value = GENERATE(1, 2, 5, 6, 62, 1234, 64, 99);
-	auto const array_size{34};
-	auto start_array = static_cast<int*>(malloc(32*array_size));
-	if (start_array==nullptr) FAIL("start_array is null :c");
-
-	for (int i = 0; i<array_size; ++i)
-		start_array[i] = i;
-
-	auto array = insert(start_array, array_size, array_size, value);
-
-	REQUIRE(array!=nullptr);
-	if (array!=nullptr) {
-		for (int i = 0; i<array_size; ++i)
-			REQUIRE(array[i]==i);
-		REQUIRE(value==array[array_size]);
-		free(array);
-	}
+/**
+ * @brief adds an element to the front of an array and increases the size.
+ * @tparam T The type of the array
+ * @tparam Size_T the size of the current array
+ * @param value the value to add to front of the array
+ * @param array the array to copy into the return value
+ * @param length the size of the array param
+ * @return a new array of type T with an added element
+ */
+template<class T, class Size_T>
+static T *helper::insert(T const &value, T const *array, Size_T length) {
+    auto new_array = new int[length + 1U]; // NOLINT(clion-misra-cpp2008-18-4-1)
+    for (unsigned i = 0U; i < length; ++i) {
+        new_array[i + 1U] = array[i];
+    }
+    new_array[0] = value;
+    return new_array;
 }
 
-TEST_CASE("insert - random")
-{
-	auto value = GENERATE(1, 2, 3, 6, 9, 15, 24, 39);
-	auto const array_size{50};
-	auto start_array = static_cast<int*>(malloc(32*array_size));
-	if (start_array==nullptr) FAIL("start_array is null :c");
-
-	for (int i = 0; i<array_size; ++i)
-		start_array[i] = 55;
-
-	auto array = insert(start_array, array_size, value, value);
-
-	REQUIRE(array!=nullptr);
-	if (array!=nullptr) {
-		for (int i = 0; i<array_size+1; ++i) {
-			if (i==value) continue;
-			REQUIRE(array[i]==55);
-		}
-		REQUIRE(value==array[value]);
-		free(array);
-	}
+/**
+ * @brief adds an element to an index of an array and increases the size.
+ * @tparam T The type of the array
+ * @tparam Size_T the size of the current array
+ * @param value the value to add to front of the array
+ * @param array the array to copy into the return value
+ * @param length the size of the array param
+ * @param index the index to add the new element
+ * @return a new array of type T with an added element
+ */
+template<class T, class Size_T>
+static T *helper::insert(const T &value, const T *array, Size_T length, Size_T index) {
+    auto new_array = new int[length + 1U]; // NOLINT(clion-misra-cpp2008-18-4-1)
+    for (unsigned i = 0U; i < length; ++i) {
+        new_array[i] = i == index ? value : array[i];
+    }
+    new_array[length] = length == index ? value : array[length - 1U];
+    return new_array;
 }
-
-TEST_CASE("insert - shift test")
-{
-	auto value = GENERATE(1, 2, 3, 6, 9, 15, 24, 39);
-	auto const array_size{50};
-	auto start_array = static_cast<int*>(malloc(32*array_size));
-	if (start_array==nullptr) FAIL("start_array is null :c");
-
-	for (int i = 0; i<array_size; ++i) {
-		start_array[i] = i;
-	}
-	auto array = insert(start_array, array_size, array_size-1, value);
-
-	REQUIRE(array!=nullptr);
-	if (array!=nullptr) {
-
-		for (int i = 0; i<array_size-1; ++i) {
-			REQUIRE(array[i]==i);
-		}
-		REQUIRE(array[array_size-1]==value);
-		free(array);
-	}
-}
-
-TEST_CASE("insert - shift test from front")
-{
-	auto const array_size{50};
-	auto start_array = static_cast<int*>(malloc(32*array_size));
-	if (start_array==nullptr) return;
-
-	for (int i = 0; i<array_size; ++i) {
-		start_array[i] = i+1;
-	}
-	auto array = insert(start_array, array_size, 0, 0);
-
-	REQUIRE(array!=nullptr);
-	if (array!=nullptr) {
-
-		for (int i = 0; i<array_size+1; ++i) {
-			REQUIRE(i==array[i]);
-		}
-
-
-		//        for (int i = 0; i < array_size + 1; ++i) {
-//            REQUIRE(array[i] == i);
-//        }
-		free(array);
-	}
-}
-
-#pragma clang diagnostic pop

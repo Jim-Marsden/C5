@@ -6,6 +6,7 @@
 #define C5_BENCHMARKING_H
 
 #include <chrono>
+#include <string>
 
 class benchmarking {
 public:
